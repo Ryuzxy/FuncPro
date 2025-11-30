@@ -4,9 +4,9 @@ import (
     "github.com/gin-gonic/gin"
     "gorm.io/gorm"
     
-    "github.com/ryuzxy/fucpro/internal/middleware"
-    "github.com/ryuzxy/fucpro/pkg/komoditas"
-    "github.com/ryuzxy/fucpro/pkg/price"
+    "github.com/ryuzxy/FuncPro/internal/middleware"
+    "github.com/ryuzxy/FuncPro/pkg/Komoditas"
+    "github.com/ryuzxy/FuncPro/pkg/price"
 )
 
 func SetupRouter(db *gorm.DB) *gin.Engine {

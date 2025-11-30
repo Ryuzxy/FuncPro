@@ -5,7 +5,7 @@ import (
     "fmt"
     
     "gorm.io/gorm"
-    "github.com/ryuzxy/fucpro/pkg/fx"
+    "github.com/ryuzxy/FuncPro/pkg/fx"
 )
 
 type Repository interface {
