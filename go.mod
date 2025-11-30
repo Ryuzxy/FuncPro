@@ -1,4 +1,4 @@
-module FUNCPRO
+module github.com/ryuzxy/FuncPro
 
 go 1.25.1
 

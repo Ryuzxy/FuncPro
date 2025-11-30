@@ -2,12 +2,11 @@ package db
 
 import (
     "fmt"
-    
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
-    "github.com/ryuzxy/fucpro/internal/config"
-    "github.com/ryuzxy/fucpro/pkg/komoditas"
-    "github.com/ryuzxy/fucpro/pkg/price"
+    "github.com/ryuzxy/FuncPro/internal/config"
+    "github.com/ryuzxy/FuncPro/pkg/komoditas"
+    "github.com/ryuzxy/FuncPro/pkg/price"
 )
 
 // InitDB initializes database connection
