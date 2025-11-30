@@ -5,9 +5,9 @@ import (
     "os"
     
     "github.com/joho/godotenv"
-    "github.com/ryuzxy/fucpro/db"
-    "github.com/ryuzxy/fucpro/internal/config"
-    "github.com/ryuzxy/fucpro/router"
+    "github.com/ryuzxy/FuncPro/db"
+    "github.com/ryuzxy/FuncPro/internal/config"
+    "github.com/ryuzxy/FuncPro/router"
 )
 
 func main() {

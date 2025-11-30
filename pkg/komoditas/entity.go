@@ -1,4 +1,4 @@
-package komoditas
+package Komoditas
 
 import (
     "time"
