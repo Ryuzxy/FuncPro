@@ -42,17 +42,25 @@ func (o Option[T]) UnwrapOr(defaultValue T) T {
 }
 
 // Map transforms the value if present
-func (o Option[T]) Map[R any](fn func(T) R) Option[R] {
+// func (o Option[T]) Map[R any](fn func(T) R) Option[R] {
+//     if o.value == nil {
+//         return None[R]()
+//     }
+//     return Some(fn(*o.value))
+// }
+
+// Map transforms the value if present (as a method)
+func (o Option[T]) Map(fn func(T) T) Option[T] {
     if o.value == nil {
-        return None[R]()
+        return None[T]()
     }
     return Some(fn(*o.value))
 }
 
 // AndThen chains operations that return Option
-func (o Option[T]) AndThen[R any](fn func(T) Option[R]) Option[R] {
-    if o.value == nil {
-        return None[R]()
-    }
-    return fn(*o.value)
-}
+// func (o Option[T]) AndThen[R any](fn func(T) Option[R]) Option[R] {
+//     if o.value == nil {
+//         return None[R]()
+//     }
+//     return fn(*o.value)
+// }

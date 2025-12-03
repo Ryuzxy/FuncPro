@@ -5,7 +5,7 @@ import (
     "strconv"
     
     "github.com/gin-gonic/gin"
-    "github.com/ryuzxy/fucpro/pkg/fx"
+    "github.com/ryuzxy/FuncPro/pkg/fx"
 )
 
 type Handler struct {

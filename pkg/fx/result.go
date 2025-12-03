@@ -18,16 +18,16 @@ func Err[T any](e error) Result[T] {
     return Result[T]{value: z, err: e} 
 }
 
-// Map applies function to successful value
-func (r Result[T]) Map[R any](fn func(T) R) Result[R] {
+// Map applies function to successful value (sebagai function, bukan method)
+func FxMap[T, R any](r Result[T], fn func(T) R) Result[R] {
     if r.err != nil { 
         return Err[R](r.err) 
     }
     return Ok(fn(r.value))
 }
 
-// AndThen chains operations that may fail
-func (r Result[T]) AndThen[R any](fn func(T) Result[R]) Result[R] {
+// AndThen chains operations that may fail (sebagai function, bukan method)
+func AndThen[T, R any](r Result[T], fn func(T) Result[R]) Result[R] {
     if r.err != nil { 
         return Err[R](r.err) 
     }

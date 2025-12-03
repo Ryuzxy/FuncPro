@@ -6,7 +6,7 @@ import (
     "time"
     
     "gorm.io/gorm"
-    "github.com/ryuzxy/fucpro/pkg/fx"
+    "github.com/ryuzxy/FuncPro/pkg/fx"
 )
 
 type PriceRepository interface {

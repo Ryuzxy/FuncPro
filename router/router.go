@@ -5,7 +5,7 @@ import (
     "gorm.io/gorm"
     
     "github.com/ryuzxy/FuncPro/internal/middleware"
-    "github.com/ryuzxy/FuncPro/pkg/Komoditas"
+    "github.com/ryuzxy/FuncPro/pkg/komoditas"
     "github.com/ryuzxy/FuncPro/pkg/price"
 )
 

@@ -5,7 +5,7 @@ import (
     "fmt"
     "time"
     
-    "github.com/ryuzxy/fucpro/pkg/fx"
+    "github.com/ryuzxy/FuncPro/pkg/fx"
 )
 
 type Service interface {
