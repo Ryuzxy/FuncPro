@@ -8,6 +8,7 @@ import (
     "github.com/ryuzxy/FuncPro/db"
     "github.com/ryuzxy/FuncPro/internal/config"
     "github.com/ryuzxy/FuncPro/router"
+    "github.com/ryuzxy/FuncPro/internal/middleware"
 )
 
 func main() {
@@ -28,6 +29,10 @@ func main() {
     
     // Setup router
     r := router.SetupRouter(database)
+
+    //setup midleware
+    r.Use(middleware.Logger(), middleware.CORS())
+
     
     // Start server
     log.Printf("Server starting on port %s", cfg.ServerPort)

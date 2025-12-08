@@ -1,66 +1,23 @@
 package fx
 
-// Option represents an optional value
+
 type Option[T any] struct {
-    value *T
+    value T
+    ok bool
 }
 
-// Some creates an Option with value
-func Some[T any](value T) Option[T] {
-    return Option[T]{value: &value}
-}
 
-// None creates an empty Option
-func None[T any]() Option[T] {
-    return Option[T]{value: nil}
-}
+func Some[T any](v T) Option[T] { return Option[T]{value: v, ok: true} }
+func None[T any]() Option[T] { return Option[T]{ok: false} }
 
-// IsSome checks if Option contains value
-func (o Option[T]) IsSome() bool {
-    return o.value != nil
-}
 
-// IsNone checks if Option is empty
-func (o Option[T]) IsNone() bool {
-    return o.value == nil
-}
+func (o Option[T]) IsSome() bool { return o.ok }
+func (o Option[T]) IsNone() bool { return !o.ok }
 
-// Unwrap returns the value or panics
-func (o Option[T]) Unwrap() T {
-    if o.value == nil {
-        panic("unwrap on none option")
+
+func (o Option[T]) UnwrapOr(def T) T {
+    if o.ok {
+        return o.value
     }
-    return *o.value
+    return def
 }
-
-// UnwrapOr returns value or default
-func (o Option[T]) UnwrapOr(defaultValue T) T {
-    if o.value == nil {
-        return defaultValue
-    }
-    return *o.value
-}
-
-// Map transforms the value if present
-// func (o Option[T]) Map[R any](fn func(T) R) Option[R] {
-//     if o.value == nil {
-//         return None[R]()
-//     }
-//     return Some(fn(*o.value))
-// }
-
-// Map transforms the value if present (as a method)
-func (o Option[T]) Map(fn func(T) T) Option[T] {
-    if o.value == nil {
-        return None[T]()
-    }
-    return Some(fn(*o.value))
-}
-
-// AndThen chains operations that return Option
-// func (o Option[T]) AndThen[R any](fn func(T) Option[R]) Option[R] {
-//     if o.value == nil {
-//         return None[R]()
-//     }
-//     return fn(*o.value)
-// }

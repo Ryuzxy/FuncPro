@@ -3,143 +3,104 @@ package price
 import (
     "net/http"
     "strconv"
-    
+
     "github.com/gin-gonic/gin"
-    "github.com/ryuzxy/FuncPro/pkg/fx"
+
 )
 
 type Handler struct {
     service Service
 }
 
-func NewHandler(service Service) *Handler {
-    return &Handler{service: service}
+func NewHandler(s Service) *Handler {
+    return &Handler{service: s}
 }
 
-// CreatePrice creates new price entry
 func (h *Handler) CreatePrice(c *gin.Context) {
     var req CreatePriceRequest
     if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   err.Error(),
-        })
+        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
         return
     }
-    
-    result := h.service.CreatePrice(c.Request.Context(), req)
-    
-    result.Match(
-        func(price Price) interface{} {
-            c.JSON(http.StatusCreated, gin.H{
-                "success": true,
-                "data":    ToResponse(price),
-            })
-            return nil
-        },
-        func(err error) interface{} {
-            c.JSON(http.StatusBadRequest, gin.H{
-                "success": false,
-                "error":   err.Error(),
-            })
-            return nil
-        },
-    )
+
+    price, err := h.service.CreatePrice(c.Request.Context(), req).Unwrap()
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "success": true,
+        "data":    ToResponse(price),
+    })
 }
 
-// GetPricesByKomoditas returns prices for specific komoditas
 func (h *Handler) GetPricesByKomoditas(c *gin.Context) {
-    komoditasID, err := strconv.ParseUint(c.Param("komoditas_id"), 10, 32)
+    id, err := strconv.ParseUint(c.Param("komoditas_id"), 10, 32)
     if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Invalid komoditas ID format",
-        })
+        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid komoditas id"})
         return
     }
-    
-    result := h.service.GetPricesByKomoditas(c.Request.Context(), uint(komoditasID))
-    
-    result.Match(
-        func(prices []Price) interface{} {
-            responses := fx.Map(prices, ToResponse)
-            c.JSON(http.StatusOK, gin.H{
-                "success": true,
-                "data":    responses,
-                "count":   len(responses),
-            })
-            return nil
-        },
-        func(err error) interface{} {
-            c.JSON(http.StatusInternalServerError, gin.H{
-                "success": false,
-                "error":   err.Error(),
-            })
-            return nil
-        },
-    )
+
+    prices, err := h.service.GetPricesByKomoditas(c.Request.Context(), uint(id)).Unwrap()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
+        return
+    }
+
+    // mapping clean
+    resp := make([]PriceResponse, 0, len(prices))
+    for _, p := range prices {
+        resp = append(resp, ToResponse(p))
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    resp,
+        "count":   len(resp),
+    })
 }
 
-// GetPriceAnalysis returns price analysis for komoditas
 func (h *Handler) GetPriceAnalysis(c *gin.Context) {
-    komoditasID, err := strconv.ParseUint(c.Param("komoditas_id"), 10, 32)
+    id, err := strconv.ParseUint(c.Param("komoditas_id"), 10, 32)
     if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Invalid komoditas ID format",
-        })
+        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid komoditas id"})
         return
     }
-    
-    result := h.service.GetPriceAnalysis(c.Request.Context(), uint(komoditasID))
-    
-    result.Match(
-        func(analysis PriceAnalysis) interface{} {
-            c.JSON(http.StatusOK, gin.H{
-                "success": true,
-                "data":    ToAnalysisResponse(analysis),
-            })
-            return nil
-        },
-        func(err error) interface{} {
-            c.JSON(http.StatusInternalServerError, gin.H{
-                "success": false,
-                "error":   err.Error(),
-            })
-            return nil
-        },
-    )
+
+    analysis, err := h.service.GetPriceAnalysis(c.Request.Context(), uint(id)).Unwrap()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    ToAnalysisResponse(analysis),
+    })
 }
 
-// BulkCreatePrices creates multiple price entries
 func (h *Handler) BulkCreatePrices(c *gin.Context) {
     var reqs []CreatePriceRequest
     if err := c.ShouldBindJSON(&reqs); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   err.Error(),
-        })
+        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
         return
     }
-    
-    result := h.service.BulkCreatePrices(c.Request.Context(), reqs)
-    
-    result.Match(
-        func(prices []Price) interface{} {
-            responses := fx.Map(prices, ToResponse)
-            c.JSON(http.StatusCreated, gin.H{
-                "success": true,
-                "data":    responses,
-                "count":   len(responses),
-            })
-            return nil
-        },
-        func(err error) interface{} {
-            c.JSON(http.StatusBadRequest, gin.H{
-                "success": false,
-                "error":   err.Error(),
-            })
-            return nil
-        },
-    )
+
+    prices, err := h.service.BulkCreatePrices(c.Request.Context(), reqs).Unwrap()
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
+        return
+    }
+
+    resp := make([]PriceResponse, 0, len(prices))
+    for _, p := range prices {
+        resp = append(resp, ToResponse(p))
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "success": true,
+        "data":    resp,
+        "count":   len(resp),
+    })
 }

@@ -2,7 +2,6 @@ package price
 
 import "time"
 
-// CreatePriceRequest DTO for creating price
 type CreatePriceRequest struct {
     KomoditasID uint      `json:"komoditas_id" binding:"required"`
     Value       float64   `json:"value" binding:"required,gt=0"`
@@ -10,7 +9,6 @@ type CreatePriceRequest struct {
     Market      string    `json:"market" binding:"max=100"`
 }
 
-// PriceResponse DTO for price response
 type PriceResponse struct {
     ID          uint      `json:"id"`
     KomoditasID uint      `json:"komoditas_id"`
@@ -20,7 +18,6 @@ type PriceResponse struct {
     CreatedAt   time.Time `json:"created_at"`
 }
 
-// PriceAnalysisResponse DTO for price analysis
 type PriceAnalysisResponse struct {
     Current    float64 `json:"current"`
     Previous   float64 `json:"previous"`
@@ -30,7 +27,6 @@ type PriceAnalysisResponse struct {
     Volatility float64 `json:"volatility"`
 }
 
-// ToResponse converts Price to response DTO
 func ToResponse(p Price) PriceResponse {
     return PriceResponse{
         ID:          p.ID,
@@ -42,14 +38,13 @@ func ToResponse(p Price) PriceResponse {
     }
 }
 
-// ToAnalysisResponse converts PriceAnalysis to response DTO
-func ToAnalysisResponse(analysis PriceAnalysis) PriceAnalysisResponse {
-    return PriceAnalysisResponse{
-        Current:    analysis.Current,
-        Previous:   analysis.Previous,
-        Change:     analysis.Change,
-        ChangePct:  analysis.ChangePct,
-        Trend:      analysis.Trend,
-        Volatility: analysis.Volatility,
-    }
+func ToAnalysisResponse(a PriceAnalysis) PriceAnalysisResponse {
+    r := PriceAnalysisResponse{}
+    r.Current = a.Current
+    r.Previous = a.Previous
+    r.Change = a.Change
+    r.ChangePct = a.ChangePct
+    r.Trend = a.Trend
+    r.Volatility = a.Volatility
+    return r
 }

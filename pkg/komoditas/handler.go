@@ -3,7 +3,7 @@ package komoditas
 import (
     "net/http"
     "strconv"
-    
+
     "github.com/gin-gonic/gin"
     "github.com/ryuzxy/FuncPro/pkg/fx"
 )
@@ -16,13 +16,14 @@ func NewHandler(service Service) *Handler {
     return &Handler{service: service}
 }
 
-// GetAllKomoditas returns all komoditas
+// -------------------- GET ALL --------------------
 func (h *Handler) GetAllKomoditas(c *gin.Context) {
     result := h.service.GetAllKomoditas(c.Request.Context())
-    
-    result.Match(
-        func(komoditas []Komoditas) interface{} {
-            responses := fx.Map(komoditas, ToResponse)
+
+    fx.Match(
+        result,
+        func(data []Komoditas) any {
+            responses := fx.Map(data, ToResponse)
             c.JSON(http.StatusOK, gin.H{
                 "success": true,
                 "data":    responses,
@@ -30,7 +31,7 @@ func (h *Handler) GetAllKomoditas(c *gin.Context) {
             })
             return nil
         },
-        func(err error) interface{} {
+        func(err error) any {
             c.JSON(http.StatusInternalServerError, gin.H{
                 "success": false,
                 "error":   err.Error(),
@@ -40,28 +41,32 @@ func (h *Handler) GetAllKomoditas(c *gin.Context) {
     )
 }
 
-// GetKomoditasByID returns komoditas by ID
+// -------------------- GET BY ID --------------------
 func (h *Handler) GetKomoditasByID(c *gin.Context) {
-    id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Invalid ID format",
-        })
+    id, ok := parseID(c)
+    if !ok {
         return
     }
-    
-    result := h.service.GetKomoditasByID(c.Request.Context(), uint(id))
-    
-    result.Match(
-        func(komoditas Komoditas) interface{} {
+
+    result := h.service.GetKomoditasByID(c.Request.Context(), id)
+
+    fx.Match(
+        result,
+        func(data *Komoditas) any {
+            if data == nil {
+                c.JSON(http.StatusNotFound, gin.H{
+                    "success": false,
+                    "error":   "Komoditas not found",
+                })
+                return nil
+            }
             c.JSON(http.StatusOK, gin.H{
                 "success": true,
-                "data":    ToResponse(komoditas),
+                "data":    ToResponse(*data),
             })
             return nil
         },
-        func(err error) interface{} {
+        func(err error) any {
             c.JSON(http.StatusNotFound, gin.H{
                 "success": false,
                 "error":   err.Error(),
@@ -71,28 +76,32 @@ func (h *Handler) GetKomoditasByID(c *gin.Context) {
     )
 }
 
-// CreateKomoditas creates new komoditas
+// -------------------- CREATE --------------------
 func (h *Handler) CreateKomoditas(c *gin.Context) {
     var req CreateKomoditasRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   err.Error(),
-        })
+    if !bindJSON(c, &req) {
         return
     }
-    
+
     result := h.service.CreateKomoditas(c.Request.Context(), req)
-    
-    result.Match(
-        func(komoditas Komoditas) interface{} {
+
+    fx.Match(
+        result,
+        func(data *Komoditas) any {
+            if data == nil {
+                c.JSON(http.StatusInternalServerError, gin.H{
+                    "success": false,
+                    "error":   "failed to create komoditas",
+                })
+                return nil
+            }
             c.JSON(http.StatusCreated, gin.H{
                 "success": true,
-                "data":    ToResponse(komoditas),
+                "data":    ToResponse(*data),
             })
             return nil
         },
-        func(err error) interface{} {
+        func(err error) any {
             c.JSON(http.StatusBadRequest, gin.H{
                 "success": false,
                 "error":   err.Error(),
@@ -102,37 +111,37 @@ func (h *Handler) CreateKomoditas(c *gin.Context) {
     )
 }
 
-// UpdateKomoditas updates existing komoditas
+// -------------------- UPDATE --------------------
 func (h *Handler) UpdateKomoditas(c *gin.Context) {
-    id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Invalid ID format",
-        })
+    id, ok := parseID(c)
+    if !ok {
         return
     }
-    
+
     var req UpdateKomoditasRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   err.Error(),
-        })
+    if !bindJSON(c, &req) {
         return
     }
-    
-    result := h.service.UpdateKomoditas(c.Request.Context(), uint(id), req)
-    
-    result.Match(
-        func(komoditas Komoditas) interface{} {
+
+    result := h.service.UpdateKomoditas(c.Request.Context(), id, req)
+
+    fx.Match(
+        result,
+        func(data *Komoditas) any {
+            if data == nil {
+                c.JSON(http.StatusNotFound, gin.H{
+                    "success": false,
+                    "error":   "Komoditas not found",
+                })
+                return nil
+            }
             c.JSON(http.StatusOK, gin.H{
                 "success": true,
-                "data":    ToResponse(komoditas),
+                "data":    ToResponse(*data),
             })
             return nil
         },
-        func(err error) interface{} {
+        func(err error) any {
             c.JSON(http.StatusBadRequest, gin.H{
                 "success": false,
                 "error":   err.Error(),
@@ -142,28 +151,32 @@ func (h *Handler) UpdateKomoditas(c *gin.Context) {
     )
 }
 
-// DeleteKomoditas deletes komoditas
+// -------------------- DELETE --------------------
 func (h *Handler) DeleteKomoditas(c *gin.Context) {
-    id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Invalid ID format",
-        })
+    id, ok := parseID(c)
+    if !ok {
         return
     }
-    
-    result := h.service.DeleteKomoditas(c.Request.Context(), uint(id))
-    
-    result.Match(
-        func(success bool) interface{} {
+
+    result := h.service.DeleteKomoditas(c.Request.Context(), id)
+
+    fx.Match(
+        result,
+        func(success bool) any {
+            if !success {
+                c.JSON(http.StatusInternalServerError, gin.H{
+                    "success": false,
+                    "error":   "failed to delete komoditas",
+                })
+                return nil
+            }
             c.JSON(http.StatusOK, gin.H{
                 "success": true,
                 "message": "Komoditas deleted successfully",
             })
             return nil
         },
-        func(err error) interface{} {
+        func(err error) any {
             c.JSON(http.StatusBadRequest, gin.H{
                 "success": false,
                 "error":   err.Error(),
@@ -173,28 +186,25 @@ func (h *Handler) DeleteKomoditas(c *gin.Context) {
     )
 }
 
-// GetKomoditasStats returns komoditas with price statistics
+// -------------------- STATISTICS --------------------
 func (h *Handler) GetKomoditasStats(c *gin.Context) {
-    id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Invalid ID format",
-        })
+    id, ok := parseID(c)
+    if !ok {
         return
     }
-    
-    result := h.service.GetKomoditasWithStats(c.Request.Context(), uint(id))
-    
-    result.Match(
-        func(komoditasWithStats KomoditasWithStats) interface{} {
+
+    result := h.service.GetKomoditasWithStats(c.Request.Context(), id)
+
+    fx.Match(
+        result,
+        func(data KomoditasWithStats) any {
             c.JSON(http.StatusOK, gin.H{
                 "success": true,
-                "data":    ToStatsResponse(komoditasWithStats),
+                "data":    ToStatsResponse(data),
             })
             return nil
         },
-        func(err error) interface{} {
+        func(err error) any {
             c.JSON(http.StatusNotFound, gin.H{
                 "success": false,
                 "error":   err.Error(),
@@ -202,4 +212,28 @@ func (h *Handler) GetKomoditasStats(c *gin.Context) {
             return nil
         },
     )
+}
+
+// -------------------- HELPERS --------------------
+func parseID(c *gin.Context) (uint, bool) {
+    id64, err := strconv.ParseUint(c.Param("id"), 10, 32)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "success": false,
+            "error":   "Invalid ID format",
+        })
+        return 0, false
+    }
+    return uint(id64), true
+}
+
+func bindJSON[T any](c *gin.Context, target *T) bool {
+    if err := c.ShouldBindJSON(target); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "success": false,
+            "error":   err.Error(),
+        })
+        return false
+    }
+    return true
 }

@@ -4,16 +4,16 @@ import (
     "context"
     "fmt"
     "time"
-    
+
     "github.com/ryuzxy/FuncPro/pkg/fx"
 )
 
 type Service interface {
     CreatePrice(ctx context.Context, req CreatePriceRequest) fx.Result[Price]
-    GetPricesByKomoditas(ctx context.Context, komoditasID uint) fx.Result[[]Price]
-    GetPriceAnalysis(ctx context.Context, komoditasID uint) fx.Result[PriceAnalysis]
+    GetPricesByKomoditas(ctx context.Context, id uint) fx.Result[[]Price]
+    GetPriceAnalysis(ctx context.Context, id uint) fx.Result[PriceAnalysis]
     BulkCreatePrices(ctx context.Context, reqs []CreatePriceRequest) fx.Result[[]Price]
-    GetPriceTrends(ctx context.Context, komoditasIDs []uint) fx.Result[map[uint]PriceAnalysis]
+    GetPriceTrends(ctx context.Context, ids []uint) fx.Result[map[uint]PriceAnalysis]
 }
 
 type service struct {
@@ -24,24 +24,22 @@ func NewService(repo PriceRepository) Service {
     return &service{repo: repo}
 }
 
-// Pure validation function
-func validateCreateRequest(req CreatePriceRequest) fx.Result[CreatePriceRequest] {
+func validateCreateRequest(req CreatePriceRequest) error {
     if req.KomoditasID == 0 {
-        return fx.Err[CreatePriceRequest](fmt.Errorf("komoditas_id is required"))
+        return fmt.Errorf("komoditas_id required")
     }
     if req.Value <= 0 {
-        return fx.Err[CreatePriceRequest](fmt.Errorf("value must be positive"))
+        return fmt.Errorf("value must > 0")
     }
     if req.Date.IsZero() {
-        return fx.Err[CreatePriceRequest](fmt.Errorf("date is required"))
+        return fmt.Errorf("date required")
     }
     if req.Date.After(time.Now()) {
-        return fx.Err[CreatePriceRequest](fmt.Errorf("date cannot be in the future"))
+        return fmt.Errorf("date cannot be future")
     }
-    return fx.Ok(req)
+    return nil
 }
 
-// Pure transformation function
 func requestToPrice(req CreatePriceRequest) Price {
     return Price{
         KomoditasID: req.KomoditasID,
@@ -52,130 +50,101 @@ func requestToPrice(req CreatePriceRequest) Price {
 }
 
 func (s *service) CreatePrice(ctx context.Context, req CreatePriceRequest) fx.Result[Price] {
-    return validateCreateRequest(req).
-        Map(requestToPrice).
-        AndThen(func(p Price) fx.Result[Price] {
-            return s.repo.Create(ctx, p)
-        })
+    if err := validateCreateRequest(req); err != nil {
+        return fx.Err[Price](err)
+    }
+
+    p := requestToPrice(req)
+    return s.repo.Create(ctx, p)
 }
 
-func (s *service) GetPricesByKomoditas(ctx context.Context, komoditasID uint) fx.Result[[]Price] {
-    return s.repo.GetByKomoditasID(ctx, komoditasID)
+func (s *service) GetPricesByKomoditas(ctx context.Context, id uint) fx.Result[[]Price] {
+    return s.repo.GetByKomoditasID(ctx, id)
 }
 
-func (s *service) GetPriceAnalysis(ctx context.Context, komoditasID uint) fx.Result[PriceAnalysis] {
-    // Get prices for last 30 days
+func (s *service) GetPriceAnalysis(ctx context.Context, id uint) fx.Result[PriceAnalysis] {
     end := time.Now()
     start := end.AddDate(0, 0, -30)
-    
-    pricesResult := s.repo.GetByKomoditasIDAndDateRange(ctx, komoditasID, start, end)
-    
-    return pricesResult.Map(func(prices []Price) PriceAnalysis {
-        return analyzePrices(prices)
-    })
+
+    prices, err := s.repo.GetByKomoditasIDAndDateRange(ctx, id, start, end).Unwrap()
+    if err != nil {
+        return fx.Err[PriceAnalysis](err)
+    }
+
+    analysis := analyzePrices(prices)
+    return fx.Ok(analysis)
 }
 
 func (s *service) BulkCreatePrices(ctx context.Context, reqs []CreatePriceRequest) fx.Result[[]Price] {
-    // Validate all requests
-    validatedPrices := make([]fx.Result[Price], 0, len(reqs))
-    
+    prices := make([]Price, 0, len(reqs))
+
     for _, req := range reqs {
-        result := validateCreateRequest(req).
-            Map(requestToPrice)
-        validatedPrices = append(validatedPrices, result)
-    }
-    
-    // Check for validation errors
-    for _, result := range validatedPrices {
-        if result.IsErr() {
-            return fx.Err[[]Price](result.Unwrap().Error)
+        if err := validateCreateRequest(req); err != nil {
+            return fx.Err[[]Price](err)
         }
+        prices = append(prices, requestToPrice(req))
     }
-    
-    // Extract valid prices
-    prices := make([]Price, 0, len(validatedPrices))
-    for _, result := range validatedPrices {
-        price, _ := result.Unwrap()
-        prices = append(prices, price)
-    }
-    
+
     return s.repo.BulkCreate(ctx, prices)
 }
 
-func (s *service) GetPriceTrends(ctx context.Context, komoditasIDs []uint) fx.Result[map[uint]PriceAnalysis] {
-    type analysisResult struct {
-        komoditasID uint
-        analysis    PriceAnalysis
-        err         error
-    }
-    
-    // Process each komoditas concurrently
-    results := fx.ParallelMap(ctx, komoditasIDs, func(ctx context.Context, id uint) fx.Result[analysisResult] {
-        analysis := s.GetPriceAnalysis(ctx, id)
-        return analysis.Map(func(a PriceAnalysis) analysisResult {
-            return analysisResult{
-                komoditasID: id,
-                analysis:    a,
-            }
-        })
-    }, 5) // 5 concurrent workers
-    
-    return results.Map(func(results []analysisResult) map[uint]PriceAnalysis {
-        trendMap := make(map[uint]PriceAnalysis)
-        for _, result := range results {
-            trendMap[result.komoditasID] = result.analysis
+func (s *service) GetPriceTrends(ctx context.Context, ids []uint) fx.Result[map[uint]PriceAnalysis] {
+    trends := make(map[uint]PriceAnalysis)
+
+    for _, id := range ids {
+        analysis, err := s.GetPriceAnalysis(ctx, id).Unwrap()
+        if err != nil {
+            return fx.Err[map[uint]PriceAnalysis](err)
         }
-        return trendMap
-    })
+        trends[id] = analysis
+    }
+
+    return fx.Ok(trends)
 }
 
-// Pure function for price analysis
 func analyzePrices(prices []Price) PriceAnalysis {
     if len(prices) == 0 {
         return PriceAnalysis{}
     }
-    
-    // Sort by date (assuming they come sorted from DB)
-    sortedPrices := fx.Map(prices, func(p Price) Price { return p })
-    
-    current := sortedPrices[len(sortedPrices)-1].Value
-    var previous float64
-    
-    if len(sortedPrices) > 1 {
-        previous = sortedPrices[len(sortedPrices)-2].Value
-    } else {
-        previous = current
+
+    current := prices[len(prices)-1].Value
+    previous := current
+    if len(prices) > 1 {
+        previous = prices[len(prices)-2].Value
     }
-    
+
     change := current - previous
-    changePct := (change / previous) * 100
-    
-    // Calculate volatility (standard deviation)
-    values := fx.Map(sortedPrices, func(p Price) float64 { return p.Value })
-    mean := fx.Reduce(values, 0.0, func(acc, val float64) float64 { 
-        return acc + val 
-    }) / float64(len(values))
-    
-    variance := fx.Reduce(values, 0.0, func(acc, val float64) float64 {
-        diff := val - mean
-        return acc + (diff * diff)
-    }) / float64(len(values))
-    
-    volatility := variance // Simplified - in real case, use proper std dev
-    
+    changePct := 0.0
+    if previous != 0 {
+        changePct = (change / previous) * 100
+    }
+
+    values := make([]float64, len(prices))
+    for i, p := range prices {
+        values[i] = p.Value
+    }
+
+    mean := AveragePrice(values)
+    variance := 0.0
+    for _, v := range values {
+        diff := v - mean
+        variance += diff * diff
+    }
+    variance /= float64(len(values))
+
     trend := "stable"
     if changePct > 5 {
         trend = "up"
     } else if changePct < -5 {
         trend = "down"
     }
-    
+
     return PriceAnalysis{
         Current:    current,
         Previous:   previous,
         Change:     change,
         ChangePct:  changePct,
         Trend:      trend,
-        Volatility: volatility,
+        Volatility: variance,
     }
 }
