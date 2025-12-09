@@ -16,7 +16,6 @@ func NewHandler(service Service) *Handler {
     return &Handler{service: service}
 }
 
-// -------------------- GET ALL --------------------
 func (h *Handler) GetAllKomoditas(c *gin.Context) {
     result := h.service.GetAllKomoditas(c.Request.Context())
 
@@ -41,7 +40,6 @@ func (h *Handler) GetAllKomoditas(c *gin.Context) {
     )
 }
 
-// -------------------- GET BY ID --------------------
 func (h *Handler) GetKomoditasByID(c *gin.Context) {
     id, ok := parseID(c)
     if !ok {
@@ -76,7 +74,6 @@ func (h *Handler) GetKomoditasByID(c *gin.Context) {
     )
 }
 
-// -------------------- CREATE --------------------
 func (h *Handler) CreateKomoditas(c *gin.Context) {
     var req CreateKomoditasRequest
     if !bindJSON(c, &req) {
@@ -111,7 +108,6 @@ func (h *Handler) CreateKomoditas(c *gin.Context) {
     )
 }
 
-// -------------------- UPDATE --------------------
 func (h *Handler) UpdateKomoditas(c *gin.Context) {
     id, ok := parseID(c)
     if !ok {
@@ -151,7 +147,6 @@ func (h *Handler) UpdateKomoditas(c *gin.Context) {
     )
 }
 
-// -------------------- DELETE --------------------
 func (h *Handler) DeleteKomoditas(c *gin.Context) {
     id, ok := parseID(c)
     if !ok {
@@ -186,7 +181,6 @@ func (h *Handler) DeleteKomoditas(c *gin.Context) {
     )
 }
 
-// -------------------- STATISTICS --------------------
 func (h *Handler) GetKomoditasStats(c *gin.Context) {
     id, ok := parseID(c)
     if !ok {
@@ -214,7 +208,6 @@ func (h *Handler) GetKomoditasStats(c *gin.Context) {
     )
 }
 
-// -------------------- HELPERS --------------------
 func parseID(c *gin.Context) (uint, bool) {
     id64, err := strconv.ParseUint(c.Param("id"), 10, 32)
     if err != nil {

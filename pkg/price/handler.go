@@ -48,7 +48,6 @@ func (h *Handler) GetPricesByKomoditas(c *gin.Context) {
         return
     }
 
-    // mapping clean
     resp := make([]PriceResponse, 0, len(prices))
     for _, p := range prices {
         resp = append(resp, ToResponse(p))

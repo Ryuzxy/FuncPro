@@ -16,7 +16,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
     // Middleware
     r.Use(middleware.Logger())
-    r.Use(gin.Recovery()) // diganti karena middleware.Recovery() tidak ada
+    r.Use(gin.Recovery()) 
     r.Use(middleware.CORS())
 
     // Initialize repositories

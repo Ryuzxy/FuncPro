@@ -41,13 +41,12 @@ func (s *service) CreateKomoditas(ctx context.Context, req CreateKomoditasReques
 }
 
 func (s *service) UpdateKomoditas(ctx context.Context, id uint, req UpdateKomoditasRequest) fx.Result[*Komoditas] {
-	// Step 1: Ambil data existing
+
 	existing, err := s.repo.GetByID(ctx, id).Unwrap()
 	if err != nil {
 		return fx.Err[*Komoditas](fmt.Errorf("komoditas not found: %w", err))
 	}
 
-	// Step 2: Apply perubahan
 	if req.Name != "" {
 		existing.Name = req.Name
 	}
@@ -55,7 +54,6 @@ func (s *service) UpdateKomoditas(ctx context.Context, id uint, req UpdateKomodi
 		existing.Type = req.Type
 	}
 
-	// Step 3: Commit ke repository
 	return s.repo.Update(ctx, id, existing)
 }
 

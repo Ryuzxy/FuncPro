@@ -8,7 +8,7 @@ import (
     "github.com/gin-gonic/gin"
 )
 
-// Logger mencatat request masuk & keluar.
+
 func Logger() gin.HandlerFunc {
     return func(c *gin.Context) {
         start := time.Now()
@@ -24,7 +24,7 @@ func Logger() gin.HandlerFunc {
     }
 }
 
-// CORS sederhana dan aman—bisa dibuat configurable nanti.
+// CORS 
 func CORS() gin.HandlerFunc {
     return func(c *gin.Context) {
         c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
