@@ -20,8 +20,8 @@ func Load() *Config {
         DBHost:     getEnv("DB_HOST", "localhost"),
         DBPort:     getEnv("DB_PORT", "5432"),
         DBUser:     getEnv("DB_USER", "postgres"),
-        DBPassword: getEnv("DB_PASSWORD", ""),
-        DBName:     getEnv("DB_NAME", "fucpro"),
+        DBPassword: getEnv("DB_PASSWORD", "Ryuxy27."),
+        DBName:     getEnv("DB_NAME", "FUNCPRO"),
         ServerPort: getEnv("SERVER_PORT", "8080"),
         Env:        getEnv("ENV", "development"),
     }
